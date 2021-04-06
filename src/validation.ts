@@ -22,7 +22,7 @@ export const validate = sequenceS(
   E.getValidation(getMonoid<ValidationError>())
 );
 
-export const toFormErrors = <T>(
+export const getErrors = <T>(
   x: E.Either<ValidationError[], T>
 ): E.Either<Record<string, ValidatorInfo>, T> =>
   pipe(
