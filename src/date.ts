@@ -3,14 +3,12 @@ import * as O from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/function";
 import { ValidationError, Validator, ValidatorInfo } from "./validation";
 
-const parseDate = (x: string) => pipe(x, Date.parse, O.fromPredicate(isFinite));
-
 export const isDate = (
   path: ReadonlyArray<string>
 ): Validator<string, Date> => (value: string) =>
   pipe(
     value,
-    parseDate,
+    (x: string) => pipe(x, Date.parse, O.fromPredicate(isFinite)),
     O.map((x) => new Date(x)),
     E.fromOption(() => [new ValidationError([...path], new InvalidDateInfo())])
   );
@@ -48,6 +46,7 @@ class DateAfterInfo implements ValidatorInfo {
   public readonly type = "DateAfter";
   constructor(public readonly actual: Date, public readonly min: Date) {}
 }
+
 export const dateEqual = (
   path: ReadonlyArray<string>,
   date: Date
@@ -69,8 +68,8 @@ export const dateSameOrBefore = (
 ): Validator<Date, Date> => (value: Date) =>
   pipe(
     value,
-    dateBefore([...path], max),
-    E.chain(dateEqual([...path], max)),
+    dateEqual([...path], max),
+    E.fold(() => dateBefore([...path], max)(value), E.right),
     E.mapLeft(() => [
       new ValidationError([...path], new DateSameOrBeforeInfo(value, max)),
     ])
@@ -87,8 +86,8 @@ export const dateSameOrAfter = (
 ): Validator<Date, Date> => (value: Date) =>
   pipe(
     value,
-    dateAfter([...path], min),
-    E.chain(dateEqual([...path], min)),
+    dateEqual([...path], min),
+    E.fold(() => dateAfter([...path], min)(value), E.right),
     E.mapLeft(() => [
       new ValidationError([...path], new DateSameOrAfterInfo(value, min)),
     ])
