@@ -17,8 +17,9 @@ no
 
 ### Solution
 
-A validation in general, is a relatively simple problem, you take Model, which can have some values, and ValidModel which will have explicitly typed values, a validator should guarantee that the model prouced, will match the given type, validatedT, in this case `Validator(DraftModel) => E.Either<ValidationErrors[], ValidModel>` where
+A validation in general, is a relatively simple problem, you take `Model`, which can have some values, and `ValidModel` which will have explicitly typed values, a validator should guarantee that the model produced, will match the given type, `ValidModel`, in this case `Validator(DraftModel) => E.Either<ValidationErrors[], ValidModel>` where
 
+- either is a type of `E.Either<Left, Right>`, which contains either left, or right value, representing the validation result
 - `Left` is ValidationErrors, which describe where the error occurred,
 - `Right` if object was valid, will contain ValidatedT
 
@@ -27,8 +28,11 @@ Type safe validation will allow to create a better type safety application in js
 1. Validation will fail on TS and on runtime
 1. TS will fail if produced object does not match to ValidatedT (any key, does not match to ValidatedT)
 1. TS will fail if validation model does not match to ValidatedT
+1. Validation return type is alwayts the validation model given and result of validations given to it
 
 The end result, is an either key-value object, where key is the given `path` to an value, and value is an `ValidationError`, or the explicitly described, excact validated model.
+
+The end result is always either valid, or invalid, never it is partially valid. partial validity can be achieved only by making the validator model partial and mapping the validation result to a desired format. (partially valid result)
 
 ## Usage
 
@@ -58,7 +62,7 @@ interface User {
 
 // the validation
 // Validator<T, ValidatedT> => E.Either<ValidationError[], ValidatedT>
-export const userV: Validator<DraftUser, User> =>(model) => V.validate({
+export const userV: V.Validator<DraftUser, User> =>(model) => V.validate({
   type: E.right('USER'),
   firstName: pipe(
     model.firstName,
@@ -82,7 +86,10 @@ export const userV: Validator<DraftUser, User> =>(model) => V.validate({
   ),
   birthDate: pipe(
     model.birthDate,
-    V.isDate(['birthDate']),
+    V.nonNullable(['birthdate']),
+    E.chain(
+      V.isDate(['birthDate']),
+    ),
     E.chain(
       V.dateInRange(['birthDate'], new Date(), new Date(Date.now() + 10 * 24 * 3600 * 1000)),
     ),
